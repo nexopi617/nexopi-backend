@@ -4,7 +4,7 @@ const path = require('path');
 const cors = require('cors');
 const app = express();
 
-// Check API Key
+// تحذير كان API Key ناقص
 if (!process.env.PI_API_KEY) {
   console.error('WARNING: PI_API_KEY is missing! Payments will fail.');
 }
@@ -13,21 +13,21 @@ if (!process.env.PI_API_KEY) {
 app.use(cors());
 app.use(express.json());
 
-// مهم: يخلي السيرفر يلقى index.html و manifest.json و validation-key.txt
+// مهم جدا: يخلي Express يلقى index.html و manifest.json و الصور
 app.use(express.static(__dirname));
 
-// Route متاع validation-key.txt - حط المفتاح الصحيح هنا
+// Route متاع Pi Domain Validation - بدّل المفتاح هنا
 app.get('/validation-key.txt', (req, res) => {
   res.type('text/plain');
-  res.send('pi-domain-validation-xxxxxxxxxx'); // ← بدّل هذا بالمفتاح من Pi Developer Portal
+  res.send('pi-domain-validation-xxxxxxxxxx'); // ← حط مفتاحك من Pi Developer Portal هنا
 });
 
-// Route أساسية - ترجع index.html
+// Route رئيسية - ترجع index.html و تحل مشكلة Not Found
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// 1. Approve Payment
+// 1. Approve Payment من Pi Servers
 app.post('/approve-payment', async (req, res) => {
   try {
     const { paymentId } = req.body;
@@ -46,7 +46,7 @@ app.post('/approve-payment', async (req, res) => {
       }
     );
     
-    console.log('Approve success');
+    console.log('Approve success:', response.data);
     res.status(200).json(response.data);
   } catch (error) {
     console.error('Approve error:', error.response?.data || error.message);
@@ -54,7 +54,7 @@ app.post('/approve-payment', async (req, res) => {
   }
 });
 
-// 2. Complete Payment
+// 2. Complete Payment من Pi Servers
 app.post('/complete-payment', async (req, res) => {
   try {
     const { paymentId, txid } = req.body;
@@ -73,7 +73,7 @@ app.post('/complete-payment', async (req, res) => {
       }
     );
     
-    console.log('Complete success');
+    console.log('Complete success:', response.data);
     res.status(200).json(response.data);
   } catch (error) {
     console.error('Complete error:', error.response?.data || error.message);
@@ -81,7 +81,7 @@ app.post('/complete-payment', async (req, res) => {
   }
 });
 
-// مهم جدا: هذا يخلي اي صفحة اخرى ترجع للـ index.html و يحل مشكلة Not Found
+// مهم جدا: اي رابط غالط يرجع للـ index.html - يحل Not Found نهائيا
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
