@@ -12,15 +12,17 @@ if (!process.env.PI_API_KEY) {
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, '/')));
 
-// مهم: Route متاع validation-key.txt
+// مهم: يخلي السيرفر يلقى index.html و manifest.json و validation-key.txt
+app.use(express.static(__dirname));
+
+// Route متاع validation-key.txt - حط المفتاح الصحيح هنا
 app.get('/validation-key.txt', (req, res) => {
   res.type('text/plain');
-  res.send('pi-domain-validation-xxxxxx'); // حط المفتاح متاعك هنا
+  res.send('pi-domain-validation-xxxxxxxxxx'); // ← بدّل هذا بالمفتاح من Pi Developer Portal
 });
 
-// Route أساسية
+// Route أساسية - ترجع index.html
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
@@ -77,6 +79,11 @@ app.post('/complete-payment', async (req, res) => {
     console.error('Complete error:', error.response?.data || error.message);
     res.status(500).json({ error: error.response?.data || error.message });
   }
+});
+
+// مهم جدا: هذا يخلي اي صفحة اخرى ترجع للـ index.html و يحل مشكلة Not Found
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 const PORT = process.env.PORT || 3000;
