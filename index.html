@@ -1,54 +1,46 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NexoPi</title>
-  <link rel="manifest" href="manifest.json">
-  <script src="https://sdk.minepi.com/pi-sdk.js"></script>
-  <style>
-    body { 
-      font-family: Arial, sans-serif; 
-      text-align: center; 
-      padding: 50px;
-      background: #f5;
-    }
-    h1 { color: #7c4dff; }
-    button {
-      background: #7c4dff;
-      color: white;
-      border: none;
-      padding: 15px 30px;
-      margin: 10px;
-      font-size: 16px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: bold;
-    }
-    button:hover { background: #6a3de8; }
-    button:disabled {
-      background: #ccc;
-      cursor: not-allowed;
-    }
-    #status {
-      margin-top: 30px;
-      font-size: 18px;
-      color: #333;
-      font-weight: bold;
-      min-height: 25px;
-    }
-  </style>
+    <title>NexoPi Test</title>
+    <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 </head>
 <body>
-  <h1>NexoPi App</h1>
-  <button id="login">Login with Pi</button>
-  <button id="pay" disabled>Pay 1 Pi Test</button>
-  <p id="status">Ready</p>
-  
-  <script>
-    // لازم تعمل Init قبل كل شي
-    Pi.init({ version: "2.0", sandbox: true });
-  </script>
-  <script src="payment-handler.js"></script>
+    <h1>NexoPi شغال ✅</h1>
+    <button onclick="login()">Login with Pi</button>
+    <button onclick="pay()">Pay 1 Pi Test</button>
+    <div id="username"></div>
+
+    <script>
+        Pi.init({ version: "2.0", sandbox: true });
+
+        function login() {
+            Pi.authenticate(['username', 'payments'], function(auth) {
+                document.getElementById('username').innerText = 'Hello @' + auth.user.username;
+            });
+        }
+
+        function pay() {
+            Pi.createPayment({
+                amount: 1,
+                memo: "Test Payment",
+                metadata: { test: true },
+            }, {
+                onReadyForServerApproval: (paymentId) => {
+                    fetch('/approve-payment', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ paymentId: paymentId })
+                    });
+                },
+                onReadyForServerCompletion: (paymentId, txid) => {
+                    fetch('/complete-payment', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ paymentId: paymentId, txid: txid })
+                    });
+                }
+            });
+        }
+    </script>
 </body>
 </html>
