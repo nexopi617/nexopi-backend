@@ -11,7 +11,7 @@
       font-family: Arial, sans-serif; 
       text-align: center; 
       padding: 50px;
-      background: #f5f5f5;
+      background: #f5;
     }
     h1 { color: #7c4dff; }
     button {
@@ -23,22 +23,32 @@
       font-size: 16px;
       border-radius: 8px;
       cursor: pointer;
+      font-weight: bold;
     }
     button:hover { background: #6a3de8; }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
     #status {
       margin-top: 30px;
       font-size: 18px;
       color: #333;
       font-weight: bold;
+      min-height: 25px;
     }
   </style>
 </head>
 <body>
   <h1>NexoPi App</h1>
   <button id="login">Login with Pi</button>
-  <button id="pay">Pay 1 Pi Test</button>
+  <button id="pay" disabled>Pay 1 Pi Test</button>
   <p id="status">Ready</p>
   
+  <script>
+    // لازم تعمل Init قبل كل شي
+    Pi.init({ version: "2.0", sandbox: true });
+  </script>
   <script src="payment-handler.js"></script>
 </body>
 </html>
