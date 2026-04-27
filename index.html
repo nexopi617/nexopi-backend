@@ -1,43 +1,83 @@
 <!DOCTYPE html>
-<html>
+<html lang="ar">
 <head>
-    <title>NexoPi Test</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NexoPi Mainnet</title>
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+    <style>
+        body { font-family: Arial; text-align: center; padding: 50px; background: #1a1a2e; color: white; }
+        button { padding: 15px 30px; margin: 10px; font-size: 18px; border: none; border-radius: 8px; cursor: pointer; }
+        #loginBtn { background: #7c3aed; color: white; }
+        #payBtn { background: #fbbf24; color: black; }
+        #status { margin-top: 30px; font-size: 16px; min-height: 24px; }
+        #username { margin-top: 10px; font-weight: bold; color: #34d399; }
+    </style>
 </head>
 <body>
     <h1>NexoPi شغال ✅</h1>
-    <button onclick="login()">Login with Pi</button>
-    <button onclick="pay()">Pay 1 Pi Test</button>
+    <p>Mainnet Version</p>
+    
+    <button id="loginBtn" onclick="login()">Login with Pi</button>
+    <button id="payBtn" onclick="pay()">Pay 1 Pi</button>
+    
     <div id="username"></div>
+    <div id="status"></div>
 
     <script>
-        Pi.init({ version: "2.0", sandbox: true });
+        // Mainnet - sandbox: false
+        Pi.init({ version: "2.0", sandbox: false });
 
         function login() {
+            document.getElementById('status').innerText = 'جاري تسجيل الدخول...';
             Pi.authenticate(['username', 'payments'], function(auth) {
                 document.getElementById('username').innerText = 'Hello @' + auth.user.username;
+                document.getElementById('status').innerText = 'تم تسجيل الدخول بنجاح ✅';
+            }).catch(function(error) {
+                document.getElementById('status').innerText = 'فشل تسجيل الدخول: ' + error;
+                console.error(error);
             });
         }
 
         function pay() {
+            document.getElementById('status').innerText = 'جاري إنشاء الدفع...';
             Pi.createPayment({
                 amount: 1,
-                memo: "Test Payment",
-                metadata: { test: true },
+                memo: "NexoPi Mainnet Access",
+                metadata: { app: "NexoPi", version: "1.0" },
             }, {
                 onReadyForServerApproval: (paymentId) => {
+                    document.getElementById('status').innerText = 'جاري الموافقة على الدفع...';
                     fetch('/approve-payment', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ paymentId: paymentId })
+                    }).catch(err => {
+                        document.getElementById('status').innerText = 'خطأ في الموافقة: ' + err;
                     });
                 },
                 onReadyForServerCompletion: (paymentId, txid) => {
+                    document.getElementById('status').innerText = 'جاري إكمال الدفع...';
                     fetch('/complete-payment', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ paymentId: paymentId, txid: txid })
+                    }).then(res => {
+                        if(res.ok) {
+                            document.getElementById('status').innerText = 'تم الدفع بنجاح 🎉 شكراً لك';
+                        } else {
+                            document.getElementById('status').innerText = 'فشل إكمال الدفع من السيرفر';
+                        }
+                    }).catch(err => {
+                        document.getElementById('status').innerText = 'خطأ في الإكمال: ' + err;
                     });
+                },
+                onCancel: (paymentId) => {
+                    document.getElementById('status').innerText = 'تم إلغاء الدفع بواسطتك';
+                },
+                onError: (error, payment) => {
+                    document.getElementById('status').innerText = 'خطأ في الدفع: ' + error;
+                    console.error("Payment error:", error, payment);
                 }
             });
         }
