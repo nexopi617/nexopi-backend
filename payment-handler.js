@@ -1,43 +1,84 @@
+// 1. Init Pi SDK - مهم برشا
 Pi.init({ version: "2.0", sandbox: true });
 
-const loginBtn = document.getElementById('login');
-const payBtn = document.getElementById('pay');
-const status = document.getElementById('status');
+// 2. متغيرات عامة
+const statusEl = document.getElementById("status");
+const loginBtn = document.getElementById("login");
+const payBtn = document.getElementById("pay");
 
-let currentUser = null;
-
-loginBtn.onclick = async () => {
+// 3. Login with Pi
+loginBtn.addEventListener("click", async () => {
   try {
-    const scopes = ['payments', 'username'];
+    statusEl.innerText = "Logging in...";
+    const scopes = ['username', 'payments'];
     const auth = await Pi.authenticate(scopes, onIncompletePaymentFound);
-    currentUser = auth.user;
-    status.innerText = `Hello ${auth.user.username} ✅`;
+    statusEl.innerText = "Logged in: @" + auth.user.username;
+    console.log("Auth success:", auth);
   } catch (err) {
-    status.innerText = `Login failed: ${err.message}`;
+    statusEl.innerText = "Login failed: " + err.message;
+    console.error("Auth error:", err);
   }
-};
+});
 
-payBtn.onclick = async () => {
-  if (!currentUser) {
-    status.innerText = 'Login first';
-    return;
-  }
-  
+// 4. Pay 1 Pi Test
+payBtn.addEventListener("click", async () => {
   try {
+    statusEl.innerText = "Creating payment...";
+    
     const payment = await Pi.createPayment({
       amount: 1,
-      memo: "Test Payment NexoPi",
-      metadata: { type: "test" }
+      memo: "NexoPi Test Payment",
+      metadata: { app: "NexoPi", orderId: Date.now() }
     }, {
-      onReadyForServerApproval: (paymentId) => {
-        fetch('/approve', {
+      // الخطوة 1: جاهز للموافقة من السيرفر
+      onReadyForServerApproval: function(paymentId) {
+        statusEl.innerText = "Waiting for server approval...";
+        console.log("onReadyForServerApproval", paymentId);
+        
+        // هوني تبعث paymentId للباك متاعك باش يعمل approve
+        fetch('/approve-payment', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ paymentId })
+          body: JSON.stringify({ paymentId: paymentId })
         });
       },
-      onReadyForServerCompletion: (paymentId, txid) => {
-        fetch('/complete', {
+      
+      // الخطوة 2: جاهز للتكملة من السيرفر
+      onReadyForServerCompletion: function(paymentId, txid) {
+        statusEl.innerText = "Completing payment...";
+        console.log("onReadyForServerCompletion", paymentId, txid);
+        
+        // هوني تبعث للباك متاعك باش يعمل complete
+        fetch('/complete-payment', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify
+          body: JSON.stringify({ paymentId: paymentId, txid: txid })
+        }).then(() => {
+          statusEl.innerText = "Payment successful! ✅";
+        });
+      },
+      
+      // الخطوة 3: المستخدم عمل Cancel
+      onCancel: function(paymentId) {
+        statusEl.innerText = "Payment cancelled";
+        console.log("onCancel", paymentId);
+      },
+      
+      // الخطوة 4: صار Error
+      onError: function(error, payment) {
+        statusEl.innerText = "Payment error: " + error;
+        console.error("onError", error, payment);
+      }
+    });
+    
+  } catch (err) {
+    statusEl.innerText = "Payment failed: " + err.message;
+    console.error("Payment error:", err);
+  }
+});
+
+// 5. دالة تخدم كان فما payment ناقص
+function onIncompletePaymentFound(payment) {
+  console.log("Incomplete payment found:", payment);
+  statusEl.innerText = "Found incomplete payment. Check console.";
+}
