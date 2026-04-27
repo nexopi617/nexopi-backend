@@ -1,17 +1,43 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>NexoPi</title>
   <link rel="manifest" href="manifest.json">
   <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+  <style>
+    body { 
+      font-family: Arial, sans-serif; 
+      text-align: center; 
+      padding: 50px;
+      background: #f5f5f5;
+    }
+    h1 { color: #7c4dff; }
+    button {
+      background: #7c4dff;
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      margin: 10px;
+      font-size: 16px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover { background: #6a3de8; }
+    #status {
+      margin-top: 30px;
+      font-size: 18px;
+      color: #333;
+      font-weight: bold;
+    }
+  </style>
 </head>
 <body>
   <h1>NexoPi App</h1>
   <button id="login">Login with Pi</button>
   <button id="pay">Pay 1 Pi Test</button>
-  <p id="status"></p>
+  <p id="status">Ready</p>
   
   <script src="payment-handler.js"></script>
 </body>
