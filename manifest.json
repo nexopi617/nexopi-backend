@@ -1,25 +1,33 @@
 {
   "name": "NexoPi",
   "short_name": "NexoPi",
-  "description": "NexoPi Test Payment App",
-  "start_url": ".",
+  "description": "NexoPi Test Payment App for Pi Network",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#7c4dff",
+  "orientation": "portrait-primary",
+  "background_color": "#1a1a2e",
+  "theme_color": "#7c3aed",
+  "categories": ["finance", "utilities"],
+  "lang": "ar",
+  "dir": "rtl",
   "icons": [
     {
       "src": "icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
       "src": "icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ],
   "pi_network": {
     "developer_url": "https://nexopi617-github-io-43mb.onrender.com",
-    "version": "1.0.0"
+    "version": "1.0.0",
+    "validation_key": "YOUR_VALIDATION_KEY_HERE"
   }
 }
