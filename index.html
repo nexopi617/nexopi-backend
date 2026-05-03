@@ -1,17 +1,90 @@
 <!DOCTYPE html>
-<html lang="ar">
+<html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NexoPi</title>
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
     <style>
-        body { font-family: Arial; text-align: center; padding: 50px; background: #1a1a2e; color: white; }
-        button { padding: 15px 30px; margin: 10px; font-size: 18px; border: none; border-radius: 8px; cursor: pointer; }
-        #loginBtn { background: #7c3aed; color: white; }
-        #payBtn { background: #fbbf24; color: black; }
-        #status { margin-top: 30px; font-size: 16px; min-height: 24px; }
-        #username { margin-top: 10px; font-weight: bold; color: #34d399; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+            text-align: center;
+            padding: 50px 20px;
+            background: linear-gradient(135deg, #1a2e 0%, #16213e 100%);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        #version {
+            color: #94a3b8;
+            margin-bottom: 30px;
+        }
+        button {
+            padding: 15px 30px;
+            margin: 10px;
+            font-size: 18px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            width: 220px;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        #loginBtn {
+            background: #7c3aed;
+            color: white;
+        }
+        #loginBtn:hover:not(:disabled) {
+            background: #6d28d9;
+        }
+        #payBtn {
+            background: #fbbf24;
+            color: #1a1a2e;
+        }
+        #payBtn:hover:not(:disabled) {
+            background: #f59e0b;
+        }
+        #username {
+            margin-top: 20px;
+            font-weight: bold;
+            color: #34d399;
+            font-size: 1.2rem;
+            min-height: 30px;
+        }
+        #status {
+            margin-top: 15px;
+            font-size: 16px;
+            min-height: 24px;
+            color: #cbd5e1;
+            max-width: 400px;
+        }
+        .error {
+            color: #f87171 !important;
+        }
+        .success {
+            color: #34d399 !important;
+        }
     </style>
 </head>
 <body>
@@ -19,99 +92,145 @@
     <p id="version">Testnet Version</p>
     
     <button id="loginBtn">Login with Pi</button>
-    <button id="payBtn">Pay 0.01 Pi</button>
+    <button id="payBtn" disabled>Pay 0.01 Pi</button>
     
     <div id="username"></div>
     <div id="status"></div>
 
     <script>
-        // التعديل 1: خليها sandbox: true للتست
-        // Mainnet ما يخدمش إلا كان App موافق عليه
+        // Init Pi SDK - لازم sandbox: true للتست
         Pi.init({ version: "2.0", sandbox: true });
 
         const statusEl = document.getElementById('status');
         const usernameEl = document.getElementById('username');
+        const loginBtn = document.getElementById('loginBtn');
+        const payBtn = document.getElementById('payBtn');
+        
         let currentUser = null;
 
-        // التعديل 2: استعمل async/await أنظف من .then
+        function setStatus(message, type = '') {
+            statusEl.innerText = message;
+            statusEl.className = type;
+        }
+
         async function login() {
             try {
-                statusEl.innerText = 'جاري تسجيل الدخول...';
+                loginBtn.disabled = true;
+                setStatus('جاري تسجيل الدخول...');
+                
                 const scopes = ['username', 'payments'];
                 const authResult = await Pi.authenticate(scopes, onIncompletePaymentFound);
                 
                 currentUser = authResult.user;
                 usernameEl.innerText = 'Hello @' + currentUser.username;
-                statusEl.innerText = 'تم تسجيل الدخول بنجاح ✅';
+                setStatus('تم تسجيل الدخول بنجاح ✅', 'success');
+                payBtn.disabled = false;
+                
             } catch (error) {
-                statusEl.innerText = 'فشل تسجيل الدخول: ' + error.message;
-                console.error(error);
+                setStatus('فشل تسجيل الدخول: ' + error.message, 'error');
+                console.error('Auth error:', error);
+                loginBtn.disabled = false;
             }
         }
 
         async function pay() {
             if (!currentUser) {
-                statusEl.innerText = 'لازم تعمل Login الأول';
+                setStatus('لازم تعمل Login الأول', 'error');
                 return;
             }
 
             try {
-                statusEl.innerText = 'جاري إنشاء الدفع...';
+                payBtn.disabled = true;
+                setStatus('جاري إنشاء الدفع...');
                 
                 await Pi.createPayment({
-                    amount: 0.01, // خليها 0.01 للتست اسهل
+                    amount: 0.01,
                     memo: "NexoPi Test Payment",
-                    metadata: { test: true },
+                    metadata: { 
+                        test: true,
+                        timestamp: Date.now(),
+                        user: currentUser.username 
+                    },
                 }, {
-                    onReadyForServerApproval: (paymentId) => {
-                        statusEl.innerText = 'جاري الموافقة على الدفع...';
-                        fetch('/approve-payment', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ paymentId })
-                        }).then(res => {
-                            if (!res.ok) statusEl.innerText = 'فشل الموافقة من السيرفر';
-                        }).catch(err => {
-                            statusEl.innerText = 'خطأ شبكة في الموافقة';
-                        });
-                    },
-                    onReadyForServerCompletion: (paymentId, txid) => {
-                        statusEl.innerText = 'جاري إكمال الدفع...';
-                        fetch('/complete-payment', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ paymentId, txid })
-                        }).then(res => {
-                            if (res.ok) {
-                                statusEl.innerText = 'تم الدفع بنجاح 🎉 شكراً لك';
-                            } else {
-                                statusEl.innerText = 'فشل إكمال الدفع من السيرفر';
+                    onReadyForServerApproval: async (paymentId) => {
+                        setStatus('جاري الموافقة على الدفع...');
+                        try {
+                            const res = await fetch('/approve-payment', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ paymentId })
+                            });
+                            
+                            if (!res.ok) {
+                                throw new Error('Server approval failed');
                             }
-                        }).catch(err => {
-                            statusEl.innerText = 'خطأ شبكة في الإكمال';
-                        });
+                            setStatus('تمت الموافقة، استنى تأكيد البلوكتشين...');
+                        } catch (err) {
+                            setStatus('فشل الموافقة من السيرفر', 'error');
+                            console.error('Approval error:', err);
+                            payBtn.disabled = false;
+                        }
                     },
+                    
+                    onReadyForServerCompletion: async (paymentId, txid) => {
+                        setStatus('جاري إكمال الدفع...');
+                        try {
+                            const res = await fetch('/complete-payment', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ paymentId, txid })
+                            });
+                            
+                            if (res.ok) {
+                                setStatus('تم الدفع بنجاح 🎉 شكراً لك', 'success');
+                            } else {
+                                throw new Error('Server completion failed');
+                            }
+                        } catch (err) {
+                            setStatus('فشل إكمال الدفع من السيرفر', 'error');
+                            console.error('Completion error:', err);
+                        } finally {
+                            payBtn.disabled = false;
+                        }
+                    },
+                    
                     onCancel: (paymentId) => {
-                        statusEl.innerText = 'تم إلغاء الدفع بواسطتك';
+                        setStatus('تم إلغاء الدفع بواسطتك', 'error');
+                        console.log('Payment cancelled:', paymentId);
+                        payBtn.disabled = false;
                     },
+                    
                     onError: (error, payment) => {
-                        statusEl.innerText = 'خطأ في الدفع: ' + error.message;
+                        setStatus('خطأ في الدفع: ' + error.message, 'error');
                         console.error("Payment error:", error, payment);
+                        payBtn.disabled = false;
                     }
                 });
+                
             } catch (error) {
-                statusEl.innerText = 'فشل إنشاء الدفع: ' + error.message;
+                setStatus('فشل إنشاء الدفع: ' + error.message, 'error');
+                console.error('Create payment error:', error);
+                payBtn.disabled = false;
             }
         }
 
         function onIncompletePaymentFound(payment) {
             console.log('Incomplete payment found:', payment);
-            statusEl.innerText = 'لقيت دفع قديم موش كامل...';
+            setStatus('لقيت دفع قديم موش كامل. كمله من Pi Wallet', 'error');
+            // تقدر تعمل auto-complete هنا لو تحب
         }
 
-        // التعديل 3: نحي onclick من HTML و نربطو هنا. أنظف و أأمن
-        document.getElementById('loginBtn').addEventListener('click', login);
-        document.getElementById('payBtn').addEventListener('click', pay);
+        // ربط الأزرار
+        loginBtn.addEventListener('click', login);
+        payBtn.addEventListener('click', pay);
+
+        // Check لو احنا في Pi Browser
+        window.addEventListener('load', () => {
+            if (typeof Pi === 'undefined') {
+                setStatus('لازم تفتح التطبيق من Pi Browser', 'error');
+                loginBtn.disabled = true;
+            }
+        });
     </script>
 </body>
 </html>
